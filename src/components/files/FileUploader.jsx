@@ -3,14 +3,14 @@ import "./FileUploader.css";
 
 const FileUpload = () => {
   const [isDragging, setIsDragging] = useState(false);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
+  const [uploadingFiles, setUploadingFiles] = useState([]);
 
   const handleDrop = (event) => {
     event.preventDefault();
     setIsDragging(false);
-    const selectedFile = event.dataTransfer.files[0];
-    setFile(selectedFile);
-    showFile(selectedFile);
+    const newFiles = Array.from(event.dataTransfer.files);
+    handleFiles(newFiles);
   };
 
   const handleDragOver = (event) => {
@@ -23,26 +23,39 @@ const FileUpload = () => {
   };
 
   const handleFileInputChange = (event) => {
-    const selectedFile = event.target.files[0];
-    setFile(selectedFile);
-    showFile(selectedFile);
+    const newFiles = Array.from(event.target.files);
+    handleFiles(newFiles);
   };
 
-  const showFile = (selectedFile) => {
-    const fileType = selectedFile.type;
+  const handleFiles = (newFiles) => {
     const validExtensions = ["image/jpeg", "image/jpg", "image/png"];
-    if (validExtensions.includes(fileType)) {
-      const fileReader = new FileReader();
-      fileReader.onload = () => {
-        const fileURL = fileReader.result;
-        setFile(fileURL); // Update the file state with the URL
-      };
-      fileReader.readAsDataURL(selectedFile);
-      alert("file uploaded");
+    const filteredFiles = newFiles.filter((file) =>
+      validExtensions.includes(file.type)
+    );
+
+    if (filteredFiles.length > 0) {
+      setFiles((prevFiles) => [...prevFiles, ...filteredFiles]);
+      uploadFiles(filteredFiles);
     } else {
-      alert("This is not an Image File!");
-      setFile(null);
+      alert("No valid image files uploaded.");
     }
+  };
+
+  const uploadFiles = (filesToUpload) => {
+    const updatedUploadingFiles = Array(filesToUpload.length).fill(true);
+
+    setUploadingFiles(updatedUploadingFiles);
+
+    filesToUpload.forEach((file, index) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Simulate file upload
+      setTimeout(() => {
+        updatedUploadingFiles[index] = false;
+        setUploadingFiles([...updatedUploadingFiles]);
+      }, (index + 1) * 1000); // Simulating different upload times
+    });
   };
 
   return (
@@ -55,19 +68,26 @@ const FileUpload = () => {
       <div className="icon">
         <i className="fas fa-cloud-upload-alt"></i>
       </div>
-      <header>Drag & Drop to Upload File</header>
+      <header>Drag & Drop to Upload Files</header>
       <span>OR</span>
       <label htmlFor="fileInput" className="file-label">
-        Browse File
+        Browse Files
         <input
           type="file"
           id="fileInput"
           hidden
           onChange={handleFileInputChange}
+          multiple
         />
       </label>
-      {/* {file && <img src={file} alt="image" />}{" "}
-      Render the img element conditionally */}
+      <div className="file-list">
+        {files.map((file, index) => (
+          <div key={index} className="file-item">
+            {uploadingFiles[index] && <div className="loader"></div>}
+            <span>{file.name}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
